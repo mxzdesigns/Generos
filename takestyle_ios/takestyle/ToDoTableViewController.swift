@@ -63,6 +63,8 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
         // Refresh data on load
         self.refreshControl?.beginRefreshing()
         self.onRefresh(self.refreshControl)
+        
+        
     }
     
     func onRefresh(sender: UIRefreshControl!) {
