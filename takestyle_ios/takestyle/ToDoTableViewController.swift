@@ -52,8 +52,11 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
         self.refreshControl?.addTarget(self, action: "onRefresh:", forControlEvents: UIControlEvents.ValueChanged)
         
         var error : NSError? = nil
-        if !self.fetchedResultController.performFetch(&error) {
-            println("Unresolved error \(error), \(error?.userInfo)")
+        do {
+            try self.fetchedResultController.performFetch()
+        } catch var error1 as NSError {
+            error = error1
+            print("Unresolved error \(error), \(error?.userInfo)")
             abort()
         }
 
@@ -74,17 +77,17 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
             if error != nil {
                 // A real application would handle various errors like network conditions,
                 // server conflicts, etc via the MSSyncContextDelegate
-                println("Error: \(error.description)")
+                print("Error: \(error.description)")
                 
                 // We will just discard our changes and keep the servers copy for simplicity                
-                if let opErrors = error.userInfo?[MSErrorPushResultKey] as? Array<MSTableOperationError> {
+                if let opErrors = error.userInfo[MSErrorPushResultKey] as? Array<MSTableOperationError> {
                     for opError in opErrors {
-                        println("Attempted operation to item \(opError.itemId)")
+                        print("Attempted operation to item \(opError.itemId)")
                         if (opError.operation == .Insert || opError.operation == .Delete) {
-                            println("Insert/Delete, failed discarding changes")
+                            print("Insert/Delete, failed discarding changes")
                             opError.cancelOperationAndDiscardItemWithCompletion(nil)
                         } else {
-                            println("Update failed, reverting to server's copy")
+                            print("Update failed, reverting to server's copy")
                             opError.cancelOperationAndUpdateItem(opError.serverItem, completion: nil)
                         }
                     }
@@ -111,14 +114,14 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
         return UITableViewCellEditingStyle.Delete
     }
     
-    override func tableView(tableView: UITableView, titleForDeleteConfirmationButtonForRowAtIndexPath indexPath: NSIndexPath) -> String!
+    override func tableView(tableView: UITableView, titleForDeleteConfirmationButtonForRowAtIndexPath indexPath: NSIndexPath) -> String?
     {
         return "Complete"
     }
     
     override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath)
     {
-        let record = self.fetchedResultController.objectAtIndexPath(indexPath) as! NSManagedObject
+        let record = self.fetchedResultController.objectAtIndexPath(indexPath) as NSManagedObject
         var item = MSCoreDataStore.tableItemFromManagedObject(record)
         
         item["complete"] = true
@@ -128,7 +131,7 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
         self.table!.update(item) { (error) -> Void in
             UIApplication.sharedApplication().networkActivityIndicatorVisible = false
             if error != nil {
-                println("Error: \(error.description)")
+                print("Error: \(error.description)")
                 return
             }
         }
@@ -146,14 +149,14 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let CellIdentifier = "Cell"
         
-        var cell = tableView.dequeueReusableCellWithIdentifier(CellIdentifier, forIndexPath: indexPath) as! UITableViewCell
+        var cell = tableView.dequeueReusableCellWithIdentifier(CellIdentifier, forIndexPath: indexPath) as UITableViewCell
         cell = configureCell(cell, indexPath: indexPath)
         
         return cell
     }
     
     func configureCell(cell: UITableViewCell, indexPath: NSIndexPath) -> UITableViewCell {
-        let item = self.fetchedResultController.objectAtIndexPath(indexPath) as! NSManagedObject
+        let item = self.fetchedResultController.objectAtIndexPath(indexPath) as NSManagedObject
         
         // Set the label on the cell and make sure the label color is black (in case this cell
         // has been reused and was previously greyed out
@@ -197,7 +200,7 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
             (item, error) in
             UIApplication.sharedApplication().networkActivityIndicatorVisible = false
             if error != nil {
-                println("Error: " + error.description)
+                print("Error: " + error.description)
             }
         }
     }
@@ -224,7 +227,7 @@ class ToDoTableViewController: UITableViewController, NSFetchedResultsController
         })
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+    func controller(controller: NSFetchedResultsController, didChangeObject anObject: NSManagedObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
         
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
             switch type {
