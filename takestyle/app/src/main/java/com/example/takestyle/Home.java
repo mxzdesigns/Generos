@@ -31,6 +31,14 @@ public class Home extends Activity {
             }
         });
 
+        Button button_login = (Button) findViewById(R.id.login_button);
+        button_login.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Home.this, LoginActivity.class));
+            }
+        });
+
 
 
     }
